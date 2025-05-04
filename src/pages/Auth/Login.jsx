@@ -8,12 +8,14 @@ export default function Login() {
   const [senha, setSenha] = useState('');
   const [tipo, setTipo] = useState('cliente');
   const [erro, setErro] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext);
+  const { login, error: authError } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErro('');
+    setIsLoading(true);
 
     try {
       const response = await api.post('/auth/login', {
@@ -24,21 +26,36 @@ export default function Login() {
 
       const { token, tipo: tipoUsuario, id } = response.data;
 
-      login({ tipo: tipoUsuario, id }, token);
+      // Chama a função login do contexto (que agora inclui tratamento de erros)
+      await login({ tipo: tipoUsuario, id }, token);
 
-      if (tipoUsuario === 'cliente') {
-        navigate('/clientes');
-      } else {
-        navigate('/vendedores');
-      }
+      // Redireciona apenas se o login foi bem-sucedido
+      navigate(tipoUsuario === 'cliente' ? '/clientes' : '/vendedores');
+      
     } catch (error) {
-      if (error.response?.status === 401) {
-        setErro('Senha inválida');
-      } else if (error.response?.status === 404) {
-        setErro('Usuário não encontrado');
-      } else {
-        setErro('Erro ao fazer login');
+      let errorMessage = 'Erro ao fazer login';
+      
+      if (error.response) {
+        // Erros da API
+        if (error.response.status === 401) {
+          errorMessage = 'Senha inválida';
+        } else if (error.response.status === 404) {
+          errorMessage = 'Usuário não encontrado';
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.message) {
+        // Erros do AuthContext (lançados na função login)
+        errorMessage = error.message;
+      } else if (authError) {
+        // Erros capturados no AuthContext
+        errorMessage = authError;
       }
+
+      setErro(errorMessage);
+      console.error('Erro no login:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -47,24 +64,28 @@ export default function Login() {
       <h2 className="mb-4">Login</h2>
       <form onSubmit={handleSubmit} className="card p-4 shadow-sm">
         <div className="form-group mb-3">
-          <label>Email</label>
+          <label htmlFor="email">Email</label>
           <input
+            id="email"
             type="email"
             className="form-control"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            disabled={isLoading}
           />
         </div>
 
         <div className="form-group mb-3">
-          <label>Senha</label>
+          <label htmlFor="senha">Senha</label>
           <input
+            id="senha"
             type="password"
             className="form-control"
             required
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
+            disabled={isLoading}
           />
         </div>
 
@@ -75,16 +96,33 @@ export default function Login() {
             id="tipoSwitch"
             checked={tipo === 'vendedor'}
             onChange={() => setTipo(tipo === 'cliente' ? 'vendedor' : 'cliente')}
+            disabled={isLoading}
           />
           <label className="form-check-label" htmlFor="tipoSwitch">
             Entrar como {tipo === 'cliente' ? 'Cliente' : 'Vendedor'}
           </label>
         </div>
 
-        {erro && <div className="alert alert-danger">{erro}</div>}
+        {erro && (
+          <div className="alert alert-danger">
+            {erro}
+            {authError && <div className="mt-2">Detalhes: {authError}</div>}
+          </div>
+        )}
 
-        <button type="submit" className="btn btn-primary w-100">
-          Entrar
+        <button 
+          type="submit" 
+          className="btn btn-primary w-100"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Carregando...
+            </>
+          ) : (
+            'Entrar'
+          )}
         </button>
       </form>
     </div>

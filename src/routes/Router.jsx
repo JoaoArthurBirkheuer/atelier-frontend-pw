@@ -2,7 +2,11 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from '../pages/Auth/Login';
 import ClienteDashboard from '../pages/Cliente/ClienteDashboard';
 import VendedorDashboard from '../pages/Vendedor/VendedorDashboard';
-import Vendedores from '../pages/Vendedor/Vendedores'; // Importe o componente Vendedores
+import Vendedores from '../pages/Vendedor/Vendedores';
+import Clientes from '../pages/Vendedor/Clientes';
+import Pecas from '../pages/Vendedor/Pecas';
+import Pedidos from '../pages/Vendedor/Pedidos';
+import VendedorInfo from '../pages/Vendedor/VendedorInfo';
 import { AuthContext } from '../context/AuthContext';
 import { useContext } from 'react';
 
@@ -26,6 +30,7 @@ export default function AppRoutes() {
       <Routes>
         <Route path="/login" element={<Login />} />
 
+        {/* Rotas para clientes */}
         <Route
           path="/clientes/*"
           element={
@@ -35,19 +40,18 @@ export default function AppRoutes() {
           }
         />
 
-        {/* Rota específica para o CRUD de vendedores */}
+        {/* Rotas para vendedores */}
         <Route
-          path="/vendedores/gerenciar"
+          path="/vendedores"
           element={
             <ProtectedRoute tipo="vendedor">
-              <Vendedores /> {/* Renderiza diretamente o componente Vendedores */}
+              <Navigate to="/vendedores/home" replace />
             </ProtectedRoute>
           }
         />
 
-        {/* Rota padrão do dashboard de vendedor */}
         <Route
-          path="/vendedores/*"
+          path="/vendedores/home"
           element={
             <ProtectedRoute tipo="vendedor">
               <VendedorDashboard />
@@ -55,6 +59,52 @@ export default function AppRoutes() {
           }
         />
 
+        <Route
+          path="/vendedores/info-pessoal"
+          element={
+            <ProtectedRoute tipo="vendedor">
+              <VendedorInfo />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/vendedores/clientes"
+          element={
+            <ProtectedRoute tipo="vendedor">
+              <Clientes />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/vendedores/gerenciar"
+          element={
+            <ProtectedRoute tipo="vendedor">
+              <Vendedores />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/vendedores/pedidos"
+          element={
+            <ProtectedRoute tipo="vendedor">
+              <Pedidos />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/vendedores/pecas"
+          element={
+            <ProtectedRoute tipo="vendedor">
+              <Pecas />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Rota padrão */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </BrowserRouter>

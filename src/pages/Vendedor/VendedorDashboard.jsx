@@ -13,9 +13,11 @@ function Home() {
   }
 
   return (
-    <div className="container mt-4">
-      <h2>Bem-vindo, {user?.tipo === 'vendedor' ? `Vendedor ${user.id}` : 'usuário'}!</h2>
-      <p>Use o menu acima para navegar pelo sistema.</p>
+    <div style={{ paddingTop: '70px' }}> {/* Espaço para o menu fixo */}
+      <div className="container mt-4">
+        <h2>Bem-vindo, {user?.nome || (user?.tipo === 'vendedor' ? `Vendedor ${user.id}` : 'usuário')}!</h2>
+        <p>Use o menu acima para navegar pelo sistema.</p>
+      </div>
     </div>
   );
 }

@@ -2,107 +2,125 @@ import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
+import VendedorMenu from '../../components/VendedorMenu';
+
+const initialVendedorState = {
+  nome: '',
+  email: '',
+  telefone: '',
+  data_admissao: '',
+  senha: ''
+};
+
+const formatarData = (dataString) => {
+  if (!dataString) return 'Não informada';
+  const data = new Date(dataString);
+  return data.toLocaleDateString('pt-BR');
+};
 
 export default function VendedorInfo() {
-  const [vendedor, setVendedor] = useState({
-    nome: '',
-    email: '',
-    telefone: '',
-    data_admissao: '',
-    senha: ''
+  const [vendedor, setVendedor] = useState(initialVendedorState);
+  const [uiState, setUiState] = useState({
+    editando: false,
+    isLoading: false,
+    erros: {},
+    erroGeral: '',
+    sucesso: ''
   });
-  const [editando, setEditando] = useState(false);
-  const [erros, setErros] = useState({});
-  const [erroGeral, setErroGeral] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [sucesso, setSucesso] = useState('');
-  const { user, token, logout } = useContext(AuthContext);
+  
+  const { user, token, logout, atualizarUsuario } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // Configuração do Axios com o token
   const api = axios.create({
     baseURL: 'http://localhost:3002',
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
+    headers: { 'Authorization': `Bearer ${token}` }
   });
+
+  const setUiStateProp = (updates) => {
+    setUiState(prev => ({ ...prev, ...updates }));
+  };
 
   useEffect(() => {
     const carregarVendedor = async () => {
       try {
-        setIsLoading(true);
+        setUiStateProp({ isLoading: true });
         const res = await api.get(`/vendedores/${user.id}`);
-        setVendedor(res.data);
+        setVendedor({
+          ...res.data,
+          senha: ''
+        });
       } catch (error) {
-        console.error('Erro ao carregar dados:', error);
-        setErroGeral('Erro ao carregar informações do vendedor');
+        setUiStateProp({ 
+          erroGeral: error.response?.data?.message || 'Erro ao carregar informações' 
+        });
       } finally {
-        setIsLoading(false);
+        setUiStateProp({ isLoading: false });
       }
     };
 
-    if (user?.id) {
-      carregarVendedor();
-    }
+    user?.id && carregarVendedor();
   }, [user?.id]);
 
   const validarCampos = () => {
     const novosErros = {};
-    let valido = true;
-
-    if (!vendedor.nome?.trim()) {
-      novosErros.nome = 'Nome é obrigatório';
-      valido = false;
-    }
-
+    
+    if (!vendedor.nome?.trim()) novosErros.nome = 'Nome é obrigatório';
     if (!vendedor.email?.trim()) {
       novosErros.email = 'Email é obrigatório';
-      valido = false;
     } else if (!/^\S+@\S+\.\S+$/.test(vendedor.email)) {
       novosErros.email = 'Email inválido';
-      valido = false;
+    }
+    if (vendedor.senha && vendedor.senha.length < 6) {
+      novosErros.senha = 'Mínimo 6 caracteres';
     }
 
-    setErros(novosErros);
-    return valido;
+    setUiStateProp({ erros: novosErros });
+    return Object.keys(novosErros).length === 0;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setVendedor(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    // Limpa o erro quando o usuário começa a digitar
-    if (erros[name]) {
-      setErros(prev => ({ ...prev, [name]: '' }));
+    setVendedor(prev => ({ ...prev, [name]: value }));
+    
+    if (uiState.erros[name]) {
+      setUiStateProp({
+        erros: { ...uiState.erros, [name]: '' }
+      });
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErroGeral('');
-    setSucesso('');
+    setUiStateProp({ erroGeral: '', sucesso: '' });
 
     if (!validarCampos()) return;
 
     try {
-      setIsLoading(true);
+      setUiStateProp({ isLoading: true });
       
-      // Remove a senha se estiver vazia para não atualizar
       const dadosParaAtualizar = { ...vendedor };
-      if (!dadosParaAtualizar.senha) {
-        delete dadosParaAtualizar.senha;
-      }
+      if (!dadosParaAtualizar.senha) delete dadosParaAtualizar.senha;
 
       await api.put(`/vendedores/${user.id}`, dadosParaAtualizar);
-      setSucesso('Informações atualizadas com sucesso!');
-      setEditando(false);
+      
+      setUiStateProp({ 
+        sucesso: 'Informações atualizadas com sucesso!',
+        editando: false,
+        isLoading: false
+      });
+
+      if (user.nome !== vendedor.nome || user.email !== vendedor.email) {
+        atualizarUsuario?.({
+          nome: vendedor.nome,
+          email: vendedor.email
+        });
+      }
     } catch (error) {
-      console.error('Erro ao atualizar:', error);
-      setErroGeral(error.response?.data?.message || 'Erro ao atualizar informações');
+      setUiStateProp({ 
+        erroGeral: error.response?.data?.message || 'Erro ao atualizar informações' 
+      });
     } finally {
-      setIsLoading(false);
+      setUiStateProp({ isLoading: false });
     }
   };
 
@@ -112,178 +130,195 @@ export default function VendedorInfo() {
     }
 
     try {
-      setIsLoading(true);
+      setUiStateProp({ isLoading: true });
       await api.delete(`/vendedores/${user.id}`);
       logout();
       navigate('/login');
     } catch (error) {
-      console.error('Erro ao excluir conta:', error);
-      setErroGeral('Erro ao excluir conta. Tente novamente.');
+      setUiStateProp({ 
+        erroGeral: error.response?.data?.message || 'Erro ao excluir conta. Tente novamente.' 
+      });
     } finally {
-      setIsLoading(false);
+      setUiStateProp({ isLoading: false });
     }
   };
 
+  const { editando, isLoading, erros, erroGeral, sucesso } = uiState;
+
   return (
-    <div className="container mt-4">
-      <div className="card shadow-sm">
-        <div className="card-header bg-primary text-white">
-          <h2 className="mb-0">Minhas Informações</h2>
-        </div>
-        
-        <div className="card-body">
-          {erroGeral && (
-            <div className="alert alert-danger">
-              {erroGeral}
-            </div>
-          )}
+    <div style={{ paddingTop: '70px' }}>
+      <VendedorMenu />
+      <div className="container mt-4">
+        <div className="card shadow-sm">
+          <div className="card-header bg-primary text-white">
+            <h2 className="mb-0">Minhas Informações</h2>
+          </div>
 
-          {sucesso && (
-            <div className="alert alert-success">
-              {sucesso}
-            </div>
-          )}
-
-          {isLoading ? (
-            <div className="text-center my-4">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Carregando...</span>
+          <div className="card-body">
+            {erroGeral && (
+              <div className="alert alert-danger">
+                {erroGeral}
               </div>
-            </div>
-          ) : editando ? (
-            <form onSubmit={handleSubmit}>
-              <div className="row mb-3">
-                <div className="col-md-6">
-                  <label className="form-label">Nome</label>
+            )}
+
+            {sucesso && (
+              <div className="alert alert-success">
+                {sucesso}
+              </div>
+            )}
+
+            {isLoading ? (
+              <div className="text-center my-4">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Carregando...</span>
+                </div>
+              </div>
+            ) : editando ? (
+              <form onSubmit={handleSubmit}>
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <label className="form-label">Nome*</label>
+                    <input
+                      type="text"
+                      className={`form-control ${erros.nome ? 'is-invalid' : ''}`}
+                      name="nome"
+                      value={vendedor.nome}
+                      onChange={handleChange}
+                      required />
+                    {erros.nome && (
+                      <div className="invalid-feedback">
+                        {erros.nome}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="col-md-6">
+                    <label className="form-label">Email*</label>
+                    <input
+                      type="email"
+                      className={`form-control ${erros.email ? 'is-invalid' : ''}`}
+                      name="email"
+                      value={vendedor.email}
+                      onChange={handleChange}
+                      required />
+                    {erros.email && (
+                      <div className="invalid-feedback">
+                        {erros.email}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <label className="form-label">Telefone</label>
+                    <input
+                      type="tel"
+                      className="form-control"
+                      name="telefone"
+                      value={vendedor.telefone}
+                      onChange={handleChange}
+                      pattern="[0-9]{10,11}"
+                      title="Digite um telefone válido (DDD + número)" />
+                  </div>
+
+                  <div className="col-md-6">
+                    <label className="form-label">Data de Admissão</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={vendedor.data_admissao ? new Date(vendedor.data_admissao).toISOString().split('T')[0] : ''}
+                      onChange={(e) => {
+                        const data = e.target.value;
+                        setVendedor(prev => ({ ...prev, data_admissao: data }));
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label">Nova Senha</label>
                   <input
-                    type="text"
-                    className={`form-control ${erros.nome ? 'is-invalid' : ''}`}
-                    name="nome"
-                    value={vendedor.nome}
+                    type="password"
+                    className={`form-control ${erros.senha ? 'is-invalid' : ''}`}
+                    name="senha"
+                    value={vendedor.senha}
                     onChange={handleChange}
-                  />
-                  {erros.nome && (
+                    placeholder="Deixe em branco para não alterar" />
+                  {erros.senha && (
                     <div className="invalid-feedback">
-                      {erros.nome}
+                      {erros.senha}
                     </div>
                   )}
+                  <small className="text-muted">Mínimo 6 caracteres</small>
                 </div>
 
-                <div className="col-md-6">
-                  <label className="form-label">Email</label>
-                  <input
-                    type="email"
-                    className={`form-control ${erros.email ? 'is-invalid' : ''}`}
-                    name="email"
-                    value={vendedor.email}
-                    onChange={handleChange}
-                  />
-                  {erros.email && (
-                    <div className="invalid-feedback">
-                      {erros.email}
-                    </div>
-                  )}
+                <div className="d-flex justify-content-between mt-4">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setUiStateProp({ 
+                      editando: false,
+                      erros: {} 
+                    })}
+                    disabled={isLoading}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Salvando...' : 'Salvar Alterações'}
+                  </button>
                 </div>
-              </div>
+              </form>
+            ) : (
+              <>
+                <div className="row mb-4">
+                  <div className="col-md-6">
+                    <h5>Nome</h5>
+                    <p className="fs-5">{vendedor.nome}</p>
+                  </div>
 
-              <div className="row mb-3">
-                <div className="col-md-6">
-                  <label className="form-label">Telefone</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="telefone"
-                    value={vendedor.telefone}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="col-md-6">
-                  <label className="form-label">Data de Admissão</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="data_admissao"
-                    value={vendedor.data_admissao}
-                    onChange={handleChange}
-                    disabled
-                  />
-                </div>
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label">Nova Senha (deixe em branco para não alterar)</label>
-                <input
-                  type="password"
-                  className="form-control"
-                  name="senha"
-                  value={vendedor.senha}
-                  onChange={handleChange}
-                  placeholder="Mínimo 6 caracteres"
-                />
-              </div>
-
-              <div className="d-flex justify-content-between">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setEditando(false)}
-                  disabled={isLoading}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Salvando...' : 'Salvar Alterações'}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <>
-              <div className="row mb-3">
-                <div className="col-md-6">
-                  <h5>Nome</h5>
-                  <p>{vendedor.nome}</p>
+                  <div className="col-md-6">
+                    <h5>Email</h5>
+                    <p className="fs-5">{vendedor.email}</p>
+                  </div>
                 </div>
 
-                <div className="col-md-6">
-                  <h5>Email</h5>
-                  <p>{vendedor.email}</p>
-                </div>
-              </div>
+                <div className="row mb-4">
+                  <div className="col-md-6">
+                    <h5>Telefone</h5>
+                    <p className="fs-5">{vendedor.telefone || 'Não informado'}</p>
+                  </div>
 
-              <div className="row mb-3">
-                <div className="col-md-6">
-                  <h5>Telefone</h5>
-                  <p>{vendedor.telefone || 'Não informado'}</p>
+                  <div className="col-md-6">
+                    <h5>Data de Admissão</h5>
+                    <p className="fs-5">{formatarData(vendedor.data_admissao)}</p>
+                  </div>
                 </div>
 
-                <div className="col-md-6">
-                  <h5>Data de Admissão</h5>
-                  <p>{vendedor.data_admissao}</p>
+                <div className="d-flex justify-content-between mt-4">
+                  <button
+                    className="btn btn-outline-danger"
+                    onClick={handleExcluirConta}
+                    disabled={isLoading}
+                  >
+                    Excluir Minha Conta
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setUiStateProp({ editando: true })}
+                    disabled={isLoading}
+                  >
+                    Editar Informações
+                  </button>
                 </div>
-              </div>
-
-              <div className="d-flex justify-content-between">
-                <button
-                  className="btn btn-danger"
-                  onClick={handleExcluirConta}
-                  disabled={isLoading}
-                >
-                  Excluir Minha Conta
-                </button>
-                <button
-                  className="btn btn-primary"
-                  onClick={() => setEditando(true)}
-                >
-                  Editar Informações
-                </button>
-              </div>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

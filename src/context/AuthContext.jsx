@@ -96,6 +96,10 @@ export function AuthProvider({ children }) {
     return !!user && !!token && !isTokenExpired(token);
   };
 
+  const atualizarUsuario = (novosDados) => {
+    setUser(prev => ({ ...prev, ...novosDados }));
+  };
+
   return (
     <AuthContext.Provider 
       value={{ 
@@ -105,7 +109,8 @@ export function AuthProvider({ children }) {
         error,
         login, 
         logout,
-        isAuthenticated
+        isAuthenticated,
+        atualizarUsuario,
       }}
     >
       {children}

@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../../context/AuthContext';
+import VendedorMenu from '../../components/VendedorMenu';
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
@@ -149,6 +150,7 @@ export default function Clientes() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <VendedorMenu />
       
       <div style={{ marginTop: '70px', padding: '20px' }}>
         <div className="container">

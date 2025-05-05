@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from '../pages/Auth/Login';
 import ClienteDashboard from '../pages/Cliente/ClienteDashboard';
 import VendedorDashboard from '../pages/Vendedor/VendedorDashboard';
+import Vendedores from '../pages/Vendedor/Vendedores'; // Importe o componente Vendedores
 import { AuthContext } from '../context/AuthContext';
 import { useContext } from 'react';
 
@@ -34,6 +35,17 @@ export default function AppRoutes() {
           }
         />
 
+        {/* Rota específica para o CRUD de vendedores */}
+        <Route
+          path="/vendedores/gerenciar"
+          element={
+            <ProtectedRoute tipo="vendedor">
+              <Vendedores /> {/* Renderiza diretamente o componente Vendedores */}
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Rota padrão do dashboard de vendedor */}
         <Route
           path="/vendedores/*"
           element={

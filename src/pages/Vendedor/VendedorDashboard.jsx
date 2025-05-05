@@ -2,6 +2,8 @@ import { Route, Routes, Navigate } from 'react-router-dom';
 import VendedorMenu from '../../components/VendedorMenu';
 import { useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
+import VendedorInfo from './VendedorInfo';
+import Clients from './Clientes';
 
 function Home() {
   const { user } = useContext(AuthContext);
@@ -14,15 +16,6 @@ function Home() {
     <div className="container mt-4">
       <h2>Bem-vindo, {user?.tipo === 'vendedor' ? `Vendedor ${user.id}` : 'usuário'}!</h2>
       <p>Use o menu acima para navegar pelo sistema.</p>
-    </div>
-  );
-}
-
-function Clientes() {
-  return (
-    <div className="container mt-4">
-      <h2>Clientes</h2>
-      <p>Funcionalidade em desenvolvimento.</p>
     </div>
   );
 }
@@ -45,6 +38,15 @@ function Pedidos() {
   );
 }
 
+function Pecas() {
+    return (
+      <div className="container mt-4">
+        <h2>Pecas</h2>
+        <p>Funcionalidade em desenvolvimento.</p>
+      </div>
+    );
+  }
+
 export default function VendedorDashboard() {
   const { user } = useContext(AuthContext);
 
@@ -57,9 +59,11 @@ export default function VendedorDashboard() {
       <VendedorMenu />
       <Routes>
         <Route path="/home" element={<Home />} />
-        <Route path="/clientes" element={<Clientes />} />
+        <Route path="/info-pessoal" element={<VendedorInfo />} />
+        <Route path="/clientes" element={<Clients />} />
         <Route path="/vendedores" element={<Vendedores />} />
         <Route path="/pedidos" element={<Pedidos />} />
+        <Route path="/pecas" element={<Pecas />} />
         <Route path="*" element={<Home />} />
       </Routes>
     </>

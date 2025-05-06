@@ -4,7 +4,7 @@ import { useNavigate, NavLink } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 export default function VendedorMenu() {
-  const { logout, user } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -15,41 +15,43 @@ export default function VendedorMenu() {
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
       <div className="container-fluid">
-        <button className="btn btn-outline-light me-3" onClick={handleLogout}>
-          Sair
-        </button>
-        <NavLink className="navbar-brand" to="/vendedores/home">
-          Dashboard do Vendedor {user?.nome && `- ${user.nome}`}
+        <NavLink className="navbar-brand" to="/vendedores">
+          {user?.nome ? `Vendedor ${user.nome}` : 'Dashboard Vendedor'}
         </NavLink>
         <button 
           className="navbar-toggler" 
           type="button" 
           data-bs-toggle="collapse" 
-          data-bs-target="#navbarNav"
+          data-bs-target="#navbarVendedor"
         >
           <span className="navbar-toggler-icon"></span>
         </button>
-        <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav ms-auto mb-2 mb-lg-0">
+        <div className="collapse navbar-collapse" id="navbarVendedor">
+          <ul className="navbar-nav me-auto">
             <li className="nav-item">
-              <NavLink className="nav-link" to="/vendedores/home">Home</NavLink>
+              <NavLink className="nav-link" to="/vendedores">Home</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className="nav-link" to="/vendedores/info-pessoal">Meus Dados</NavLink>
+              <NavLink className="nav-link" to="/vendedores/perfil">Meu Perfil</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className="nav-link" to="/vendedores/clientes">Clientes</NavLink>
+              <NavLink className="nav-link" to="/vendedores/lista-clientes">Clientes</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className="nav-link" to="/vendedores/gerenciar">Vendedores</NavLink>
+              <NavLink className="nav-link" to="/vendedores/lista-vendedores">Vendedores</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className="nav-link" to="/vendedores/pedidos">Pedidos</NavLink>
+              <NavLink className="nav-link" to="/vendedores/lista-pedidos">Pedidos</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className="nav-link" to="/vendedores/pecas">Peças</NavLink>
+              <NavLink className="nav-link" to="/vendedores/lista-pecas">Peças</NavLink>
             </li>
           </ul>
+          <div className="d-flex">
+            <button className="btn btn-outline-light" onClick={handleLogout}>
+              Sair
+            </button>
+          </div>
         </div>
       </div>
     </nav>

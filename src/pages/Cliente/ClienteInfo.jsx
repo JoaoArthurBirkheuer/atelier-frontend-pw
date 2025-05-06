@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
+import ClienteMenu from '../../components/ClienteMenu'; // Importe o ClienteMenu
 
 const initialClienteState = {
   nome: '',
@@ -21,7 +22,7 @@ export default function ClienteInfo() {
     sucesso: ''
   });
 
-  const { user, logout, atualizarUsuario } = useContext(AuthContext); //
+  const { user, logout, atualizarUsuario } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const setUiStateProp = (updates) => {
@@ -133,155 +134,157 @@ export default function ClienteInfo() {
   const { editando, isLoading, erros, erroGeral, sucesso } = uiState;
 
   return (
-    <div style={{ paddingTop: '70px' }}>
-      
-      <div className="container mt-4">
-        <div className="card shadow-sm">
-          <div className="card-header bg-primary text-white">
-            <h2 className="mb-0">Minhas Informações</h2>
-          </div>
+    <>
+      <ClienteMenu /> {/* Adicione o menu fixo aqui */}
+      <div style={{ paddingTop: '70px' }}> {/* Espaço para o menu fixo */}
+        <div className="container mt-4">
+          <div className="card shadow-sm">
+            <div className="card-header bg-primary text-white">
+              <h2 className="mb-0">Minhas Informações</h2>
+            </div>
 
-          <div className="card-body">
-            {erroGeral && <div className="alert alert-danger">{erroGeral}</div>}
-            {sucesso && <div className="alert alert-success">{sucesso}</div>}
+            <div className="card-body">
+              {erroGeral && <div className="alert alert-danger">{erroGeral}</div>}
+              {sucesso && <div className="alert alert-success">{sucesso}</div>}
 
-            {isLoading ? (
-              <div className="text-center my-4">
-                <div className="spinner-border text-primary" role="status">
-                  <span className="visually-hidden">Carregando...</span>
+              {isLoading ? (
+                <div className="text-center my-4">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Carregando...</span>
+                  </div>
                 </div>
-              </div>
-            ) : editando ? (
-              <form onSubmit={handleSubmit}>
-                <div className="row mb-3">
-                  <div className="col-md-6">
-                    <label className="form-label">Nome*</label>
+              ) : editando ? (
+                <form onSubmit={handleSubmit}>
+                  <div className="row mb-3">
+                    <div className="col-md-6">
+                      <label className="form-label">Nome*</label>
+                      <input
+                        type="text"
+                        className={`form-control ${erros.nome ? 'is-invalid' : ''}`}
+                        name="nome"
+                        value={cliente.nome}
+                        onChange={handleChange}
+                        required
+                      />
+                      {erros.nome && <div className="invalid-feedback">{erros.nome}</div>}
+                    </div>
+
+                    <div className="col-md-6">
+                      <label className="form-label">Email*</label>
+                      <input
+                        type="email"
+                        className={`form-control ${erros.email ? 'is-invalid' : ''}`}
+                        name="email"
+                        value={cliente.email}
+                        onChange={handleChange}
+                        required
+                      />
+                      {erros.email && <div className="invalid-feedback">{erros.email}</div>}
+                    </div>
+                  </div>
+
+                  <div className="row mb-3">
+                    <div className="col-md-6">
+                      <label className="form-label">Telefone</label>
+                      <input
+                        type="tel"
+                        className="form-control"
+                        name="telefone"
+                        value={cliente.telefone}
+                        onChange={handleChange}
+                        pattern="[0-9]{10,11}"
+                        title="Digite um telefone válido (DDD + número)"
+                      />
+                    </div>
+
+                    <div className="col-md-6">
+                      <label className="form-label">Endereço</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="endereco"
+                        value={cliente.endereco}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Nova Senha</label>
                     <input
-                      type="text"
-                      className={`form-control ${erros.nome ? 'is-invalid' : ''}`}
-                      name="nome"
-                      value={cliente.nome}
+                      type="password"
+                      className={`form-control ${erros.senha ? 'is-invalid' : ''}`}
+                      name="senha"
+                      value={cliente.senha}
                       onChange={handleChange}
-                      required
+                      placeholder="Deixe em branco para não alterar"
                     />
-                    {erros.nome && <div className="invalid-feedback">{erros.nome}</div>}
+                    {erros.senha && <div className="invalid-feedback">{erros.senha}</div>}
+                    <small className="text-muted">Mínimo 6 caracteres</small>
                   </div>
 
-                  <div className="col-md-6">
-                    <label className="form-label">Email*</label>
-                    <input
-                      type="email"
-                      className={`form-control ${erros.email ? 'is-invalid' : ''}`}
-                      name="email"
-                      value={cliente.email}
-                      onChange={handleChange}
-                      required
-                    />
-                    {erros.email && <div className="invalid-feedback">{erros.email}</div>}
+                  <div className="d-flex justify-content-between mt-4">
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setUiStateProp({ editando: false, erros: {} })}
+                      disabled={isLoading}
+                    >
+                      Cancelar
+                    </button>
+                    <button type="submit" className="btn btn-primary" disabled={isLoading}>
+                      {isLoading ? 'Salvando...' : 'Salvar Alterações'}
+                    </button>
                   </div>
-                </div>
+                </form>
+              ) : (
+                <>
+                  <div className="row mb-4">
+                    <div className="col-md-6">
+                      <h5>Nome</h5>
+                      <p className="fs-5">{cliente.nome}</p>
+                    </div>
 
-                <div className="row mb-3">
-                  <div className="col-md-6">
-                    <label className="form-label">Telefone</label>
-                    <input
-                      type="tel"
-                      className="form-control"
-                      name="telefone"
-                      value={cliente.telefone}
-                      onChange={handleChange}
-                      pattern="[0-9]{10,11}"
-                      title="Digite um telefone válido (DDD + número)"
-                    />
-                  </div>
-
-                  <div className="col-md-6">
-                    <label className="form-label">Endereço</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="endereco"
-                      value={cliente.endereco}
-                      onChange={handleChange}
-                    />
-                  </div>
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label">Nova Senha</label>
-                  <input
-                    type="password"
-                    className={`form-control ${erros.senha ? 'is-invalid' : ''}`}
-                    name="senha"
-                    value={cliente.senha}
-                    onChange={handleChange}
-                    placeholder="Deixe em branco para não alterar"
-                  />
-                  {erros.senha && <div className="invalid-feedback">{erros.senha}</div>}
-                  <small className="text-muted">Mínimo 6 caracteres</small>
-                </div>
-
-                <div className="d-flex justify-content-between mt-4">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setUiStateProp({ editando: false, erros: {} })}
-                    disabled={isLoading}
-                  >
-                    Cancelar
-                  </button>
-                  <button type="submit" className="btn btn-primary" disabled={isLoading}>
-                    {isLoading ? 'Salvando...' : 'Salvar Alterações'}
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <>
-                <div className="row mb-4">
-                  <div className="col-md-6">
-                    <h5>Nome</h5>
-                    <p className="fs-5">{cliente.nome}</p>
+                    <div className="col-md-6">
+                      <h5>Email</h5>
+                      <p className="fs-5">{cliente.email}</p>
+                    </div>
                   </div>
 
-                  <div className="col-md-6">
-                    <h5>Email</h5>
-                    <p className="fs-5">{cliente.email}</p>
-                  </div>
-                </div>
+                  <div className="row mb-4">
+                    <div className="col-md-6">
+                      <h5>Telefone</h5>
+                      <p className="fs-5">{cliente.telefone || 'Não informado'}</p>
+                    </div>
 
-                <div className="row mb-4">
-                  <div className="col-md-6">
-                    <h5>Telefone</h5>
-                    <p className="fs-5">{cliente.telefone || 'Não informado'}</p>
+                    <div className="col-md-6">
+                      <h5>Endereço</h5>
+                      <p className="fs-5">{cliente.endereco || 'Não informado'}</p>
+                    </div>
                   </div>
 
-                  <div className="col-md-6">
-                    <h5>Endereço</h5>
-                    <p className="fs-5">{cliente.endereco || 'Não informado'}</p>
+                  <div className="d-flex justify-content-between mt-4">
+                    <button
+                      className="btn btn-outline-danger"
+                      onClick={handleExcluirConta}
+                      disabled={isLoading}
+                    >
+                      Excluir Minha Conta
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setUiStateProp({ editando: true })}
+                      disabled={isLoading}
+                    >
+                      Editar Informações
+                    </button>
                   </div>
-                </div>
-
-                <div className="d-flex justify-content-between mt-4">
-                  <button
-                    className="btn btn-outline-danger"
-                    onClick={handleExcluirConta}
-                    disabled={isLoading}
-                  >
-                    Excluir Minha Conta
-                  </button>
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => setUiStateProp({ editando: true })}
-                    disabled={isLoading}
-                  >
-                    Editar Informações
-                  </button>
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

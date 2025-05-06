@@ -1,6 +1,5 @@
-import { useEffect, useState, useContext, useMemo } from 'react';
-import axios from 'axios';
-import { AuthContext } from '../../context/AuthContext';
+import { useEffect, useState } from 'react';
+import api from '../../services/api';
 import VendedorMenu from '../../components/VendedorMenu';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
@@ -16,16 +15,6 @@ export default function Pedidos() {
   const [showItensModal, setShowItensModal] = useState(false);
   const [erroGeral, setErroGeral] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { token } = useContext(AuthContext);
-
-  const api = useMemo(() => {
-    return axios.create({
-      baseURL: 'http://localhost:3002',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-  }, [token]);
 
   const carregarPedidos = async () => {
     try {

@@ -1,7 +1,7 @@
-import { useEffect, useState, useContext, useCallback, useMemo } from 'react';
-import axios from 'axios';
+import { useEffect, useState, useContext, useCallback} from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import VendedorMenu from '../../components/VendedorMenu';
+import api from '../../services/api'; 
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
@@ -16,16 +16,7 @@ export default function Clientes() {
   const [erros, setErros] = useState({});
   const [erroGeral, setErroGeral] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { user, token, logout } = useContext(AuthContext);
-
-  const api = useMemo(() => {
-    return axios.create({
-      baseURL: 'http://localhost:3002',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-  }, [token]);
+  const { user, logout } = useContext(AuthContext);
 
   const carregarClientes = useCallback(async () => {
     try {

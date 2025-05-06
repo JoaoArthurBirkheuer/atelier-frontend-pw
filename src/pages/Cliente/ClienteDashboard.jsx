@@ -2,6 +2,7 @@ import { Route, Routes, Navigate } from 'react-router-dom';
 import ClienteMenu from '../../components/ClienteMenu';
 import { useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
+import ClienteInfo from './ClienteInfo';
 
 function Home() {
   const { user } = useContext(AuthContext);
@@ -48,6 +49,7 @@ export default function ClienteDashboard() {
       <ClienteMenu />
       <Routes>
         <Route path="/home" element={<Home />} />
+        <Route path="/info-pessoal" element={<ClienteInfo />} />
         <Route path="/pedido" element={<Pedido />} />
         <Route path="/carrinho" element={<Carrinho />} />
         <Route path="*" element={<Home />} />

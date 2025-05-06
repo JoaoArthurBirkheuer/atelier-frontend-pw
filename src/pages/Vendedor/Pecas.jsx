@@ -1,10 +1,9 @@
-import { useEffect, useState, useContext, useMemo } from 'react';
-import axios from 'axios';
-import { AuthContext } from '../../context/AuthContext';
+import { useEffect, useState} from 'react';
 import VendedorMenu from '../../components/VendedorMenu';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
+import api from '../../services/api';
 
 export default function Pecas() {
   const [pecas, setPecas] = useState([]);
@@ -23,16 +22,6 @@ export default function Pecas() {
   const [erroGeral, setErroGeral] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const { token } = useContext(AuthContext);
-
-  const api = useMemo(() => {
-    return axios.create({
-      baseURL: 'http://localhost:3002',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-  }, [token]);
 
   const carregarPecas = async () => {
     try {

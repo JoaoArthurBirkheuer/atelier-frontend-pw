@@ -4,7 +4,7 @@ import { useNavigate, NavLink } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 export default function ClienteMenu() {
-  const { logout, user } = useContext(AuthContext);
+  const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -25,18 +25,14 @@ export default function ClienteMenu() {
               <NavLink className="nav-link" to="/clientes/home">Home</NavLink>
             </li>
             <li className="nav-item">
+              <NavLink className="nav-link" to="/clientes/info-pessoal">Meus Dados</NavLink>
+            </li>
+            <li className="nav-item">
               <NavLink className="nav-link" to="/clientes/pedido">Realizar Pedido</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className="nav-link" to="/clientes/carrinho">Visualizar Carrinho</NavLink>
+              <NavLink className="nav-link" to="/clientes/carrinho">Visualizar Pedidos</NavLink>
             </li>
-            {user && (
-              <li className="nav-item">
-                <span className="navbar-text text-white">
-                  Bem-vindo, {user?.tipo === 'cliente' ? `Cliente ${user.id}` : 'usuário'}
-                </span>
-              </li>
-            )}
           </ul>
         </div>
       </div>

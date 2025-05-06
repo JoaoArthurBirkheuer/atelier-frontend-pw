@@ -1,5 +1,5 @@
-import { useEffect, useState, useContext, useCallback, useMemo } from 'react';
-import axios from 'axios';
+import { useEffect, useState, useContext, useCallback } from 'react';
+import api from '../../services/api';
 import { AuthContext } from '../../context/AuthContext';
 import VendedorMenu from '../../components/VendedorMenu';
 
@@ -16,16 +16,7 @@ export default function Vendedores() {
   const [erros, setErros] = useState({});
   const [erroGeral, setErroGeral] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { user, token } = useContext(AuthContext);
-
-  const api = useMemo(() => {
-    return axios.create({
-      baseURL: 'http://localhost:3002',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-  }, [token]);
+  const { user } = useContext(AuthContext);
 
   // Formata data ISO para exibição (dd/MM/yyyy)
   const formatarDataExibicao = (dataISO) => {
@@ -98,7 +89,7 @@ export default function Vendedores() {
     } finally {
       setIsLoading(false);
     }
-  }, [api, user.id]);
+  }, [user.id]);
 
   useEffect(() => {
     carregarVendedores();
@@ -141,38 +132,67 @@ export default function Vendedores() {
 
   const adicionarVendedor = async () => {
     setErroGeral('');
-    
-    // Validação básica dos campos
-    if (!novoVendedor.nome || !novoVendedor.email || !novoVendedor.senha) {
-      setErroGeral('Preencha todos os campos obrigatórios');
-      return;
+    setErros({});
+  
+    // Validação completa usando a função existente validarCampos
+    if (!validarCampos(novoVendedor)) {
+      return; // A função validarCampos já define os erros
     }
   
     try {
       setIsLoading(true);
       
-      // Prepara os dados para envio
+      // Prepara os dados para envio com tratamento seguro
       const dadosParaEnviar = {
-        ...novoVendedor,
-        // Converte a data para o formato esperado pelo backend
+        nome: novoVendedor.nome.trim(),
+        email: novoVendedor.email.trim(),
+        telefone: novoVendedor.telefone?.trim() || null,
+        senha: novoVendedor.senha,
         data_admissao: novoVendedor.data_admissao 
           ? formatarDataParaBackend(novoVendedor.data_admissao)
           : null
       };
   
-      const response = await api.post('/vendedores', dadosParaEnviar);
+      // Chamada à API com timeout
+      await api.post('/vendedores', dadosParaEnviar, { timeout: 10000 });
       
-      // Atualiza a lista de vendedores
-      setNovoVendedor({ nome: '', email: '', telefone: '', data_admissao: '', senha: '' });
+      // Reset do formulário
+      setNovoVendedor({ 
+        nome: '', 
+        email: '', 
+        telefone: '', 
+        data_admissao: '', 
+        senha: '' 
+      });
+      
+      // Recarrega a lista (com tratamento de erro interno)
       await carregarVendedores();
-      
+  
     } catch (error) {
-      console.error('Erro detalhado:', error.response);
-      setErroGeral(
-        error.response?.data?.message || 
-        error.response?.data?.error || 
-        'Erro ao adicionar vendedor. Verifique os dados e tente novamente.'
-      );
+      console.error('Erro ao adicionar vendedor:', error);
+      
+      // Tratamento detalhado de diferentes tipos de erro
+      let mensagemErro = 'Erro ao adicionar vendedor';
+      
+      if (error.response) {
+        // Erro do servidor (4xx/5xx)
+        mensagemErro = error.response.data?.message || 
+                      error.response.data?.error || 
+                      `Erro ${error.response.status}: ${error.response.statusText}`;
+        
+        // Tratamento específico para email duplicado
+        if (error.response.status === 409) {
+          setErros(prev => ({ ...prev, email: 'Email já está em uso' }));
+        }
+      } else if (error.request) {
+        // Erro de conexão/timeout
+        mensagemErro = 'Sem resposta do servidor - verifique sua conexão';
+      } else {
+        // Erro na configuração da requisição
+        mensagemErro = error.message || 'Erro ao configurar a requisição';
+      }
+  
+      setErroGeral(mensagemErro);
     } finally {
       setIsLoading(false);
     }

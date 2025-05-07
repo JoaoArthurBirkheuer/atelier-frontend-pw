@@ -8,7 +8,6 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Função para verificar se o token está expirado (opcional)
   const isTokenExpired = (token) => {
     if (!token) return true;
     try {
@@ -23,27 +22,26 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const userData = localStorage.getItem('user');
-        const userToken = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
+        const storedToken = localStorage.getItem('token');
         
-        // Verifica se existem dados e se o token é válido
-        if (userData && userToken && !isTokenExpired(userToken)) {
-          setUser(JSON.parse(userData));
-          setToken(userToken);
+        if (storedUser && storedToken && !isTokenExpired(storedToken)) {
+          const parsedUser = JSON.parse(storedUser);
           
-          // Verificação adicional para garantir que os dados são válidos
-          if (!JSON.parse(userData)?.id || !JSON.parse(userData)?.tipo) {
-            throw new Error('Dados de usuário inválidos no localStorage');
+          // Verificação robusta dos dados
+          if (!parsedUser?.id || !parsedUser?.tipo) {
+            throw new Error('Dados de usuário inválidos');
           }
+
+          setUser(parsedUser);
+          setToken(storedToken);
         } else {
-          // Limpa dados inválidos/vencidos
-          if (userData || userToken) {
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-          }
+          // Limpeza segura
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
         }
       } catch (err) {
-        console.error('Erro ao inicializar autenticação:', err);
+        console.error('Erro na inicialização:', err);
         setError(err.message);
         localStorage.clear();
       } finally {
@@ -54,16 +52,18 @@ export function AuthProvider({ children }) {
     initializeAuth();
   }, []);
 
-  const login = (userData, newToken) => {
+  const login = async (userData, newToken) => {
     try {
-      // Validação básica dos dados
+      // Validação completa
       if (!userData?.id || !userData?.tipo || !newToken) {
-        throw new Error('Dados de login inválidos');
+        throw new Error('Dados de autenticação incompletos');
       }
 
       const userToStore = {
         id: userData.id,
-        tipo: userData.tipo
+        tipo: userData.tipo,
+        nome: userData.nome || '',
+        email: userData.email || ''
       };
 
       localStorage.setItem('user', JSON.stringify(userToStore));
@@ -71,10 +71,12 @@ export function AuthProvider({ children }) {
       setUser(userToStore);
       setToken(newToken);
       setError(null);
+      
+      return true;
     } catch (err) {
-      console.error('Erro ao fazer login:', err);
+      console.error('Erro no login:', err);
       setError(err.message);
-      throw err; // Rejeita a promise para tratamento no componente
+      throw err;
     }
   };
 
@@ -86,18 +88,21 @@ export function AuthProvider({ children }) {
       setToken(null);
       setError(null);
     } catch (err) {
-      console.error('Erro ao fazer logout:', err);
+      console.error('Erro no logout:', err);
       setError(err.message);
     }
   };
 
-  // Função para verificar se o usuário está autenticado
   const isAuthenticated = () => {
     return !!user && !!token && !isTokenExpired(token);
   };
 
   const atualizarUsuario = (novosDados) => {
-    setUser(prev => ({ ...prev, ...novosDados }));
+    if (!user) return;
+    
+    const updatedUser = { ...user, ...novosDados };
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
   return (

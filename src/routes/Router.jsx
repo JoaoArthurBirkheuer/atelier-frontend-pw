@@ -50,7 +50,7 @@ export default function AppRoutes() {
         />
 
         {/* Rota padrão */}
-        <Route path="*" element={<Navigate to="/clientes" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );

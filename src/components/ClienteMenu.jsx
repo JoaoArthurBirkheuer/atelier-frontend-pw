@@ -9,7 +9,9 @@ export default function ClienteMenu() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    setTimeout(() => {
+    navigate('/');
+  }, 50);
   };
 
   return (

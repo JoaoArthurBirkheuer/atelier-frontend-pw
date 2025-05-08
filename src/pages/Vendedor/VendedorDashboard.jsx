@@ -12,7 +12,7 @@ export default function VendedorDashboard() {
   const { user } = useContext(AuthContext);
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return (

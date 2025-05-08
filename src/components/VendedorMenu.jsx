@@ -9,7 +9,9 @@ export default function VendedorMenu() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    setTimeout(() => {
+    navigate('/');
+  }, 50);
   };
 
   return (

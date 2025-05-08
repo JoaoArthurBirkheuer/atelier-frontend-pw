@@ -103,6 +103,7 @@ const Pedidos = () => {
 
   return (
     <div className="container mt-4">
+      <div className="container mt-4" style={{ paddingTop: '70px' }}></div>
       <h2 className="mb-4">Gerenciamento de Pedidos</h2>
       
       <Table striped bordered hover responsive>

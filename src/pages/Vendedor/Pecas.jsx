@@ -1,9 +1,12 @@
-import { useEffect, useState} from 'react';
+// src/pages/Vendedor/Pecas.jsx
+
+import { useEffect, useState, useContext } from 'react'; // Importar useContext
 import VendedorMenu from '../../components/VendedorMenu';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import api from '../../services/api';
+import { AuthContext } from '../../context/AuthContext'; // Importar AuthContext
 
 export default function Pecas() {
   const [pecas, setPecas] = useState([]);
@@ -22,6 +25,7 @@ export default function Pecas() {
   const [erroGeral, setErroGeral] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const { user } = useContext(AuthContext); // Obtendo o usuário do contexto
 
   const carregarPecas = async () => {
     try {
@@ -30,7 +34,8 @@ export default function Pecas() {
       setPecas(res.data);
     } catch (error) {
       console.error('Erro ao carregar peças:', error);
-      setErroGeral(error.response?.data?.message || 'Erro ao carregar lista de peças');
+      // Ajustado para 'erro'
+      setErroGeral(error.response?.data?.erro || 'Erro ao carregar lista de peças');
     } finally {
       setIsLoading(false);
     }
@@ -54,12 +59,15 @@ export default function Pecas() {
       valido = false;
     }
 
-    if (!peca.preco_unitario || peca.preco_unitario <= 0) {
+    // Convertendo para número antes de validar
+    const precoUnitarioNum = parseFloat(peca.preco_unitario);
+    if (isNaN(precoUnitarioNum) || precoUnitarioNum <= 0) {
       novosErros.preco_unitario = 'Preço unitário inválido';
       valido = false;
     }
 
-    if (!peca.estoque || peca.estoque < 0) {
+    const estoqueNum = parseInt(peca.estoque);
+    if (isNaN(estoqueNum) || estoqueNum < 0) {
       novosErros.estoque = 'Estoque inválido';
       valido = false;
     }
@@ -101,7 +109,8 @@ export default function Pecas() {
       await carregarPecas();
     } catch (error) {
       console.error('Erro ao adicionar peça:', error);
-      setErroGeral(error.response?.data?.message || 'Erro ao adicionar peça');
+      // Ajustado para 'erro'
+      setErroGeral(error.response?.data?.erro || 'Erro ao adicionar peça');
     } finally {
       setIsLoading(false);
     }
@@ -119,7 +128,8 @@ export default function Pecas() {
       await carregarPecas();
     } catch (error) {
       console.error('Erro ao atualizar peça:', error);
-      setErroGeral(error.response?.data?.message || 'Erro ao atualizar peça');
+      // Ajustado para 'erro'
+      setErroGeral(error.response?.data?.erro || 'Erro ao atualizar peça');
     } finally {
       setIsLoading(false);
     }
@@ -127,6 +137,11 @@ export default function Pecas() {
 
   const deletarPeca = async (id) => {
     setErroGeral('');
+    // REQUISITO 5: Apenas administradores podem excluir peças
+    if (!user?.is_admin) { // CORRIGIDO: Usar user?.is_admin
+        setErroGeral('Acesso negado. Apenas administradores podem excluir peças.');
+        return;
+    }
     if (!window.confirm('Tem certeza que deseja excluir esta peça?')) return;
 
     try {
@@ -135,7 +150,8 @@ export default function Pecas() {
       await carregarPecas();
     } catch (error) {
       console.error('Erro ao excluir peça:', error);
-      setErroGeral(error.response?.data?.message || 'Erro ao excluir peça');
+      // Ajustado para 'erro'
+      setErroGeral(error.response?.data?.erro || 'Erro ao excluir peça');
     } finally {
       setIsLoading(false);
     }
@@ -155,7 +171,7 @@ export default function Pecas() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <VendedorMenu />
-      
+
       <div style={{ marginTop: '70px', padding: '20px' }}>
         <div className="container">
           <h2>Gerenciar Peças</h2>
@@ -167,7 +183,7 @@ export default function Pecas() {
           )}
 
           <div className="mb-4">
-            <button 
+            <button
               className="btn btn-primary"
               onClick={() => setShowModal(true)}
               disabled={isLoading}
@@ -213,13 +229,16 @@ export default function Pecas() {
                         >
                           Editar
                         </button>
-                        <button
-                          className="btn btn-sm btn-danger"
-                          onClick={() => deletarPeca(p.peca_id)}
-                          disabled={isLoading}
-                        >
-                          Excluir
-                        </button>
+                        {/* REQUISITO 5: Botão de Excluir visível/habilitado apenas para administradores */}
+                        {user?.is_admin && ( // CORRIGIDO: Usar user?.is_admin
+                          <button
+                            className="btn btn-sm btn-danger"
+                            onClick={() => deletarPeca(p.peca_id)}
+                            disabled={isLoading}
+                          >
+                            Excluir
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -316,7 +335,7 @@ export default function Pecas() {
                         onChange={handleInputChange}
                       />
                     </Form.Group>
-                  </div>
+                  </div> {/* CORRIGIDO: Removida a tag extra aqui */}
                 </div>
 
                 <Form.Group className="mb-3">
@@ -355,8 +374,8 @@ export default function Pecas() {
           <Button variant="secondary" onClick={fecharModal}>
             Cancelar
           </Button>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={editando ? atualizarPeca : adicionarPeca}
             disabled={isLoading}
           >

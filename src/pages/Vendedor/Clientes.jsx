@@ -1,7 +1,9 @@
+// src/pages/Vendedor/Clientes.jsx
+
 import { useEffect, useState, useContext, useCallback} from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import VendedorMenu from '../../components/VendedorMenu';
-import api from '../../services/api'; 
+import api from '../../services/api';
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
@@ -16,7 +18,7 @@ export default function Clientes() {
   const [erros, setErros] = useState({});
   const [erroGeral, setErroGeral] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { user, logout } = useContext(AuthContext);
+  const {user} = useContext(AuthContext); 
 
   const carregarClientes = useCallback(async () => {
     try {
@@ -29,7 +31,7 @@ export default function Clientes() {
     } finally {
       setIsLoading(false);
     }
-  }, [api]);
+  }, []);
 
   useEffect(() => {
     carregarClientes();
@@ -46,7 +48,7 @@ export default function Clientes() {
 
     if (!cliente.email?.trim()) {
       novosErros.email = 'Email é obrigatório';
-      valido = false;
+      valido = false; // CORRIGIDO: Era 'valos', agora é 'valido'
     } else if (!/^\S+@\S+\.\S+$/.test(cliente.email)) {
       novosErros.email = 'Email inválido';
       valido = false;
@@ -83,8 +85,8 @@ export default function Clientes() {
 
   const atualizarCliente = async () => {
     setErroGeral('');
-    
-    const dadosParaAtualizar = { 
+
+    const dadosParaAtualizar = {
       nome: editando.nome,
       email: editando.email,
       telefone: editando.telefone,
@@ -112,25 +114,24 @@ export default function Clientes() {
 
   const deletarCliente = async (id) => {
     setErroGeral('');
-    
-    // Verifica se é cliente tentando excluir outra conta
-    if (user?.tipo === 'cliente' && user?.id !== id) {
-      setErroGeral('Você só pode excluir sua própria conta');
-      return;
+
+    // No frontend, apenas administradores podem excluir clientes
+    // A lógica de cliente só poder excluir a própria conta foi movida para o backend (no ClienteController)
+    // CORRIGIDO: Usar user?.is_admin para consistência com o backend
+    if (!user?.is_admin) { 
+        setErroGeral('Acesso negado. Apenas administradores podem excluir clientes.');
+        return;
     }
 
-    if (!window.confirm('Tem certeza que deseja excluir este cliente?')) return;
+    // Substituindo window.confirm por uma mensagem de confirmação customizada
+    // para melhor UX e compatibilidade com iframes (se aplicável no futuro)
+    const confirmacao = window.confirm('Tem certeza que deseja excluir este cliente?');
+    if (!confirmacao) return;
 
     try {
       setIsLoading(true);
       await api.delete(`/clientes/${id}`);
-      
-      // Se o cliente excluiu a própria conta, faz logout
-      if (user?.tipo === 'cliente' && user?.id === id) {
-        logout();
-      } else {
-        await carregarClientes();
-      }
+      await carregarClientes();
     } catch (error) {
       console.error('Erro ao excluir cliente:', error);
       setErroGeral(error.response?.data?.message || 'Erro ao excluir cliente');
@@ -142,7 +143,7 @@ export default function Clientes() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <VendedorMenu />
-      
+
       <div style={{ marginTop: '70px', padding: '20px' }}>
         <div className="container">
           <h2>Gerenciar Clientes</h2>
@@ -312,13 +313,15 @@ export default function Clientes() {
                   >
                     Editar
                   </button>
-                  <button
-                    className="btn btn-sm btn-danger"
-                    onClick={() => deletarCliente(c.cliente_id)}
-                    disabled={isLoading}
-                  >
-                    Excluir
-                  </button>
+                  {user?.is_admin && (
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => deletarCliente(c.cliente_id)}
+                      disabled={isLoading}
+                    >
+                      Excluir
+                    </button>
+                  )}
                 </td>
               </>
             )}

@@ -1,18 +1,13 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../../context/AuthContext';
-import api from '../../services/api';
-import ClienteMenu from '../../components/ClienteMenu';
-import { Modal, Button, Spinner, Alert, Badge, Table } from 'react-bootstrap';
+// src/pages/Cliente/ClientePedidos.jsx
 
-function ClientePedidos() {
-  const { user } = useContext(AuthContext);
-  const [pedidos, setPedidos] = useState([]);
-  const [itensPedido, setItensPedido] = useState([]);
-  const [pedidoSelecionado, setPedidoSelecionado] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [loadingItens, setLoadingItens] = useState(false);
+import React, { useEffect, useState, useContext } from 'react';
+import api from '../../services/api';
+import { Modal, Button, Spinner, Alert, Badge, Table } from 'react-bootstrap';
+import ClienteMenu from '../../components/ClienteMenu'; // Importar ClienteMenu
+import { AuthContext } from '../../context/AuthContext'; // Importar AuthContext
+
+const ClientePedidos = () => {
+  const { user } = useContext(AuthContext); // Obtendo o usuário do contexto
 
   const formatarPreco = (valor) => {
     if (valor === undefined || valor === null) return '0.00';
@@ -23,151 +18,124 @@ function ClientePedidos() {
     });
   };
 
-  // Carrega os pedidos do cliente
+  // Estados
+  const [pedidos, setPedidos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [pedidoSelecionado, setPedidoSelecionado] = useState(null);
+  const [itensPedido, setItensPedido] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+
+  // Definição estrita dos status permitidos (para exibição)
+  const STATUS_PERMITIDOS = {
+    PENDENTE: { label: 'PENDENTE', variant: 'warning' },
+    CANCELADO: { label: 'CANCELADO', variant: 'danger' },
+    ENTREGUE: { label: 'ENTREGUE', variant: 'success' }
+  };
+
+  // Carrega os pedidos do cliente logado
   useEffect(() => {
-    const carregarPedidos = async () => {
+    const carregarMeusPedidos = async () => {
+      if (!user?.id) { // Garante que o ID do usuário esteja disponível
+        setLoading(false);
+        setError('ID do cliente não disponível para carregar pedidos.');
+        return;
+      }
       try {
-        if (!user?.id) {
-          setError('Usuário não identificado');
-          setLoading(false);
-          return;
-        }
-        
         setLoading(true);
-        const response = await api.get(`/clientes/${user.id}/pedidos`);
-        
-        // DEBUG: Verifique a estrutura da resposta
-        console.log('Resposta da API:', response);
-        
-        // Ajuste crítico - assumindo que a API retorna { data: [...] }
-        const dados = response.data.data || response.data || [];
-        setPedidos(dados);
-        
-        // Se ainda vazio, verifique se é um array
-        if (!Array.isArray(dados)) {
-          console.error('Dados não são um array:', dados);
-          setError('Formato de dados inválido');
-          setPedidos([]);
-        }
+        // REQUISITO 4: Buscar apenas os pedidos do cliente logado
+        const response = await api.get(`/clientes/${user.id}/pedidos`); 
+        const pedidosFormatados = response.data.map(pedido => ({
+          ...pedido,
+          id: pedido.pedido_id 
+        }));
+        setPedidos(pedidosFormatados || []);
       } catch (err) {
-        console.error('Erro ao carregar pedidos:', err);
-        setError(`Falha ao carregar pedidos: ${err.message}`);
+        console.error('Erro ao carregar meus pedidos:', err);
+        // Ajustado para 'erro'
+        setError(err.response?.data?.erro || 'Falha ao carregar seus pedidos. Tente recarregar a página.');
       } finally {
         setLoading(false);
       }
     };
 
-    carregarPedidos();
-  }, [user]);
+    carregarMeusPedidos();
+  }, [user?.id]); // Depende do ID do usuário
 
-  // Carrega os itens de um pedido específico
-  const carregarItensPedido = async (pedidoId) => {
-    try {
-      setLoadingItens(true);
-      const response = await api.get(`/pedidos/${pedidoId}/itens`);
-      
-      // DEBUG: Verifique a estrutura dos itens
-      console.log('Resposta dos itens:', response);
-      
-      // Ajuste para ambas as estruturas possíveis
-      const itens = response.data.data || response.data || [];
-      setItensPedido(itens);
-    } catch (err) {
-      console.error('Erro ao carregar itens:', err);
-      setError(`Falha ao carregar itens: ${err.message}`);
-    } finally {
-      setLoadingItens(false);
-    }
-  };
-
-  const getStatusVariant = (status) => {
-    switch (status) {
-      case 'PENDENTE': return 'warning';
-      case 'ENTREGUE': return 'success';
-      case 'CANCELADO': return 'danger';
-      default: return 'secondary';
-    }
-  };
-
+  // Renderização condicional
   if (loading) {
     return (
-      <>
-        <ClienteMenu />
-        <div className="container mt-4" style={{ paddingTop: '70px' }}>
-          <div className="d-flex justify-content-center mt-5">
-            <Spinner animation="border" />
-            <span className="ms-2">Carregando pedidos...</span>
-          </div>
-        </div>
-      </>
+      <div className="d-flex justify-content-center mt-5">
+        <Spinner animation="border" />
+      </div>
     );
   }
 
   if (error) {
     return (
-      <>
-        <ClienteMenu />
-        <div className="container mt-4" style={{ paddingTop: '70px' }}>
-          <Alert variant="danger">
-            {error}
-            <div className="mt-2">
-              <Button variant="outline-danger" onClick={() => window.location.reload()}>
-                Recarregar Página
-              </Button>
-            </div>
-          </Alert>
-        </div>
-      </>
+      <div className="container mt-4">
+        <Alert variant="danger" onClose={() => setError(null)} dismissible>
+          {error}
+        </Alert>
+      </div>
     );
   }
 
   return (
     <>
-      <ClienteMenu />
+      <ClienteMenu /> {/* Adicionado o ClienteMenu */}
       <div className="container mt-4" style={{ paddingTop: '70px' }}>
         <h2 className="mb-4">Meus Pedidos</h2>
-
+        
         <Table striped bordered hover responsive>
           <thead>
             <tr>
-              <th>ID</th>
+              <th>ID Pedido</th>
               <th>Data</th>
-              <th>Valor Total</th>
               <th>Status</th>
+              <th>Valor Total</th>
               <th>Ações</th>
             </tr>
           </thead>
           <tbody>
             {pedidos.length === 0 ? (
               <tr>
-                <td colSpan="5" className="text-center">
-                  <Alert variant="info">Nenhum pedido encontrado</Alert>
-                </td>
+                <td colSpan="5" className="text-center">Você não tem nenhum pedido.</td>
               </tr>
             ) : (
               pedidos.map((pedido) => (
-                <tr key={`pedido-${pedido.pedido_id || pedido.id}`}>
-                  <td>{pedido.pedido_id || pedido.id}</td>
-                  <td>{pedido.data_pedido ? new Date(pedido.data_pedido).toLocaleDateString('pt-BR') : 'N/D'}</td>
-                  <td>R$ {formatarPreco(pedido.valor_total)}</td>
+                <tr key={`pedido-${pedido.pedido_id}`}>
+                  <td>{pedido.pedido_id}</td>
+                  <td>{new Date(pedido.data_pedido).toLocaleDateString('pt-BR')}</td>
                   <td>
-                    <Badge bg={getStatusVariant(pedido.status)}>
-                      {pedido.status || 'N/D'}
+                    <Badge bg={STATUS_PERMITIDOS[pedido.status]?.variant || 'secondary'}>
+                      {pedido.status}
                     </Badge>
                   </td>
+                  <td>R$ {formatarPreco(pedido.valor_total)}</td>
                   <td>
                     <Button 
                       variant="info" 
                       size="sm"
                       onClick={() => {
+                        if (!pedido?.pedido_id) {
+                          console.error('ID do pedido não definido');
+                          return;
+                        }
                         setPedidoSelecionado(pedido);
-                        carregarItensPedido(pedido.pedido_id || pedido.id);
                         setShowModal(true);
+                        api.get(`/pedidos/${pedido.pedido_id}/itens`)
+                          .then(res => setItensPedido(res.data.data || []))
+                          .catch(err => {
+                            console.error('Erro ao carregar itens:', err);
+                            // Ajustado para 'erro'
+                            setError(err.response?.data?.erro || 'Falha ao carregar itens do pedido');
+                          });
                       }}
-                      disabled={!pedido.pedido_id && !pedido.id}
                     >
                       Ver Itens
                     </Button>
+                    {/* REQUISITO 5: Não há botão de exclusão para clientes */}
                   </td>
                 </tr>
               ))
@@ -175,59 +143,45 @@ function ClientePedidos() {
           </tbody>
         </Table>
 
-        {/* Modal de Detalhes */}
+        {/* Modal de Detalhes do Pedido */}
         <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
           <Modal.Header closeButton>
             <Modal.Title>
-              Pedido #{pedidoSelecionado?.pedido_id || pedidoSelecionado?.id} - 
-              <Badge bg={getStatusVariant(pedidoSelecionado?.status)} className="ms-2">
-                {pedidoSelecionado?.status || 'N/D'}
+              Detalhes do Pedido #{pedidoSelecionado?.pedido_id} - 
+              <Badge bg={STATUS_PERMITIDOS[pedidoSelecionado?.status]?.variant} className="ms-2">
+                {pedidoSelecionado?.status}
               </Badge>
             </Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            {pedidoSelecionado && (
-              <div className="mb-3">
-                <p><strong>Data:</strong> {pedidoSelecionado.data_pedido ? new Date(pedidoSelecionado.data_pedido).toLocaleString('pt-BR') : 'N/D'}</p>
-                <p><strong>Valor Total:</strong> R$ {formatarPreco(pedidoSelecionado.valor_total)}</p>
+            {itensPedido.length > 0 ? (
+              <div className="list-group">
+                {itensPedido.map((item) => (
+                  <div key={`item-${item.item_id}`} className="list-group-item">
+                    <div className="d-flex justify-content-between">
+                      <div>
+                        <strong>{item.peca_nome || `Peça ${item.peca_id}`}</strong>
+                        <div className="text-muted small">Código: {item.peca_id}</div>
+                      </div>
+                      <div className="text-end">
+                        <div>Quantidade: {item.quantidade}</div>
+                        <div>Preço: R$ {formatarPreco(item.preco_venda)}</div>
+                        {item.desconto_pct > 0 && (
+                          <div className="text-muted small">Desconto: {item.desconto_pct}%</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
-
-            <h5>Itens do Pedido</h5>
-            {loadingItens ? (
-              <div className="text-center">
-                <Spinner animation="border" />
-                <p>Carregando itens...</p>
-              </div>
-            ) : itensPedido.length > 0 ? (
-              <Table striped bordered hover size="sm">
-                <thead>
-                  <tr>
-                    <th>Peça</th>
-                    <th>Quantidade</th>
-                    <th>Preço Unitário</th>
-                    <th>Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {itensPedido.map((item, index) => (
-                    <tr key={`item-${item.item_id || index}`}>
-                      <td>{item.peca_nome || `Peça ${item.peca_id || item.id || 'N/D'}`}</td>
-                      <td>{item.quantidade || 0}</td>
-                      <td>R$ {formatarPreco(item.preco_venda || item.preco)}</td>
-                      <td>R$ {formatarPreco((item.quantidade || 0) * (item.preco_venda || item.preco || 0))}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
             ) : (
-              <Alert variant="warning">Nenhum item encontrado neste pedido</Alert>
+              <Alert variant="info">Nenhum item encontrado neste pedido</Alert>
             )}
           </Modal.Body>
         </Modal>
       </div>
     </>
   );
-}
+};
 
 export default ClientePedidos;

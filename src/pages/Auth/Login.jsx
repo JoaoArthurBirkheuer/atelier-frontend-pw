@@ -1,8 +1,10 @@
+// src/pages/Auth/Login.jsx
+
 import { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // Importar Link
 import { AuthContext } from '../../context/AuthContext';
 import api from '../../services/api';
-import HomeMenu from '../../components/HomeMenu'; // ✅ Import do menu
+import HomeMenu from '../../components/HomeMenu';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -25,20 +27,23 @@ export default function Login() {
         tipo
       });
 
-      const { token, tipo: tipoUsuario, id } = response.data;
-      await login({ tipo: tipoUsuario, id }, token);
+      // CORREÇÃO: Usar 'is_admin' conforme o backend retorna
+      const { token, tipo: tipoUsuario, id, nome, email: userEmail, is_admin } = response.data; 
+      await login({ tipo: tipoUsuario, id, nome, email: userEmail, is_admin }, token); // Passar is_admin para o AuthContext
       navigate(tipoUsuario === 'cliente' ? '/clientes' : '/vendedores');
 
     } catch (error) {
+      console.error('Erro no login:', error);
       let errorMessage = 'Erro ao fazer login';
 
       if (error.response) {
-        if (error.response.status === 401) {
-          errorMessage = 'Senha inválida';
+        // O backend agora retorna 'erro' em vez de 'message' para erros
+        if (error.response.data?.erro) { 
+          errorMessage = error.response.data.erro;
+        } else if (error.response.status === 401) {
+          errorMessage = 'Credenciais inválidas (senha incorreta).'; // Mensagem mais específica
         } else if (error.response.status === 404) {
-          errorMessage = 'Usuário não encontrado';
-        } else if (error.response.data?.message) {
-          errorMessage = error.response.data.message;
+          errorMessage = 'Usuário não encontrado.';
         }
       } else if (error.message) {
         errorMessage = error.message;
@@ -47,7 +52,6 @@ export default function Login() {
       }
 
       setErro(errorMessage);
-      console.error('Erro no login:', error);
     } finally {
       setIsLoading(false);
     }
@@ -55,7 +59,7 @@ export default function Login() {
 
   return (
     <>
-      <HomeMenu /> {/* ✅ Menu superior */}
+      <HomeMenu /> 
       <div className="container mt-5" style={{ paddingTop: '70px' }}>
         <h2 className="mb-4">Login</h2>
         <form onSubmit={handleSubmit} className="card p-4 shadow-sm">
@@ -102,7 +106,7 @@ export default function Login() {
           {erro && (
             <div className="alert alert-danger">
               {erro}
-              {authError && <div className="mt-2">Detalhes: {authError}</div>}
+              {/* authError já é capturado e exibido em 'erro' se for o caso */}
             </div>
           )}
 
@@ -121,6 +125,10 @@ export default function Login() {
               'Entrar'
             )}
           </button>
+          {/* NOVO: Link para a página de registro */}
+          <div className="text-center mt-3">
+            Não tem uma conta? <Link to="/register">Crie uma aqui</Link>
+          </div>
         </form>
       </div>
     </>

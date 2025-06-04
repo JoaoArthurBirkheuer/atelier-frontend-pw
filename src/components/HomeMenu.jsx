@@ -24,6 +24,11 @@ export default function HomeMenu() {
                 Login
               </NavLink>
             </li>
+            <li className="nav-item">
+              <NavLink className="nav-link" to="/registro">
+                Registrar
+              </NavLink>
+            </li>
           </ul>
         </div>
       </div>

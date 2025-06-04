@@ -1,8 +1,11 @@
+// src/pages/Cliente/ClienteInfo.jsx
+
 import { useState, useEffect, useContext } from 'react';
 import api from '../../services/api';
-import { useNavigate } from 'react-router-dom';
+// REMOVIDO: useNavigate, pois não é mais usado após a remoção da função handleExcluirConta
+// import { useNavigate } from 'react-router-dom'; 
 import { AuthContext } from '../../context/AuthContext';
-import ClienteMenu from '../../components/ClienteMenu'; // Importe o ClienteMenu
+import ClienteMenu from '../../components/ClienteMenu'; 
 
 const initialClienteState = {
   nome: '',
@@ -22,8 +25,9 @@ export default function ClienteInfo() {
     sucesso: ''
   });
 
-  const { user, logout, atualizarUsuario } = useContext(AuthContext);
-  const navigate = useNavigate();
+  // REMOVIDO: logout e navigate, pois não são mais usados
+  const { user, atualizarUsuario } = useContext(AuthContext);
+  // const navigate = useNavigate(); 
 
   const setUiStateProp = (updates) => {
     setUiState(prev => ({ ...prev, ...updates }));
@@ -40,7 +44,7 @@ export default function ClienteInfo() {
         });
       } catch (error) {
         setUiStateProp({
-          erroGeral: error.response?.data?.message || 'Erro ao carregar informações'
+          erroGeral: error.response?.data?.erro || 'Erro ao carregar informações' 
         });
       } finally {
         setUiStateProp({ isLoading: false });
@@ -105,26 +109,7 @@ export default function ClienteInfo() {
       }
     } catch (error) {
       setUiStateProp({
-        erroGeral: error.response?.data?.message || 'Erro ao atualizar informações'
-      });
-    } finally {
-      setUiStateProp({ isLoading: false });
-    }
-  };
-
-  const handleExcluirConta = async () => {
-    if (!window.confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.')) {
-      return;
-    }
-
-    try {
-      setUiStateProp({ isLoading: true });
-      await api.delete(`/clientes/${user.id}`);
-      logout();
-      navigate('/login');
-    } catch (error) {
-      setUiStateProp({
-        erroGeral: error.response?.data?.message || 'Erro ao excluir conta. Tente novamente.'
+        erroGeral: error.response?.data?.erro || 'Erro ao atualizar informações' 
       });
     } finally {
       setUiStateProp({ isLoading: false });
@@ -135,8 +120,8 @@ export default function ClienteInfo() {
 
   return (
     <>
-      <ClienteMenu /> {/* Adicione o menu fixo aqui */}
-      <div style={{ paddingTop: '70px' }}> {/* Espaço para o menu fixo */}
+      <ClienteMenu /> 
+      <div style={{ paddingTop: '70px' }}> 
         <div className="container mt-4">
           <div className="card shadow-sm">
             <div className="card-header bg-primary text-white">
@@ -263,14 +248,7 @@ export default function ClienteInfo() {
                     </div>
                   </div>
 
-                  <div className="d-flex justify-content-between mt-4">
-                    <button
-                      className="btn btn-outline-danger"
-                      onClick={handleExcluirConta}
-                      disabled={isLoading}
-                    >
-                      Excluir Minha Conta
-                    </button>
+                  <div className="d-flex justify-content-end mt-4"> 
                     <button
                       className="btn btn-primary"
                       onClick={() => setUiStateProp({ editando: true })}

@@ -1,3 +1,5 @@
+// src/pages/Vendedor/VendedorInfo.jsx
+
 import { useState, useEffect, useContext } from 'react';
 import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -15,7 +17,8 @@ const initialVendedorState = {
 const formatarData = (dataString) => {
   if (!dataString) return 'Não informada';
   const data = new Date(dataString);
-  return data.toLocaleDateString('pt-BR');
+  // Garante que a data seja formatada no fuso horário local para evitar problemas de dia
+  return new Date(data.getTime() + data.getTimezoneOffset() * 60000).toLocaleDateString('pt-BR');
 };
 
 export default function VendedorInfo() {
@@ -46,7 +49,7 @@ export default function VendedorInfo() {
         });
       } catch (error) {
         setUiStateProp({ 
-          erroGeral: error.response?.data?.message || 'Erro ao carregar informações' 
+          erroGeral: error.response?.data?.erro || 'Erro ao carregar informações' // Ajustado para 'erro'
         });
       } finally {
         setUiStateProp({ isLoading: false });
@@ -112,7 +115,7 @@ export default function VendedorInfo() {
       }
     } catch (error) {
       setUiStateProp({ 
-        erroGeral: error.response?.data?.message || 'Erro ao atualizar informações' 
+        erroGeral: error.response?.data?.erro || 'Erro ao atualizar informações' // Ajustado para 'erro'
       });
     } finally {
       setUiStateProp({ isLoading: false });
@@ -120,6 +123,12 @@ export default function VendedorInfo() {
   };
 
   const handleExcluirConta = async () => {
+    // REQUISITO 5: Apenas administradores podem excluir contas de vendedor (incluindo a própria)
+    if (!user?.is_admin) {
+      setUiStateProp({ erroGeral: 'Acesso negado. Apenas administradores podem excluir contas de vendedor.' });
+      return;
+    }
+
     if (!window.confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.')) {
       return;
     }
@@ -131,7 +140,7 @@ export default function VendedorInfo() {
       navigate('/login');
     } catch (error) {
       setUiStateProp({ 
-        erroGeral: error.response?.data?.message || 'Erro ao excluir conta. Tente novamente.' 
+        erroGeral: error.response?.data?.erro || 'Erro ao excluir conta. Tente novamente.' // Ajustado para 'erro'
       });
     } finally {
       setUiStateProp({ isLoading: false });
@@ -296,13 +305,16 @@ export default function VendedorInfo() {
                 </div>
 
                 <div className="d-flex justify-content-between mt-4">
-                  <button
-                    className="btn btn-outline-danger"
-                    onClick={handleExcluirConta}
-                    disabled={isLoading}
-                  >
-                    Excluir Minha Conta
-                  </button>
+                  {/* NOVO: Botão de Excluir Minha Conta visível apenas para administradores */}
+                  {user?.is_admin && (
+                    <button
+                      className="btn btn-outline-danger"
+                      onClick={handleExcluirConta}
+                      disabled={isLoading}
+                    >
+                      Excluir Minha Conta
+                    </button>
+                  )}
                   <button
                     className="btn btn-primary"
                     onClick={() => setUiStateProp({ editando: true })}

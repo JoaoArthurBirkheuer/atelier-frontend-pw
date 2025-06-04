@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from '../pages/Auth/Login';
+import Registro from '../pages/Auth/Registro'; // ✅ NOVO: Import do componente de Registro
 import ClienteDashboard from '../pages/Cliente/ClienteDashboard';
 import VendedorDashboard from '../pages/Vendedor/VendedorDashboard';
 import Home from '../pages/Home';
@@ -24,6 +25,7 @@ export default function AppRoutes() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/registro" element={<Registro />} />
 
         {/* Rotas de cliente */}
         <Route

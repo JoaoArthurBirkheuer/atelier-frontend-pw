@@ -19,6 +19,7 @@ export default function VendedorMenu() {
       <div className="container-fluid">
         <NavLink className="navbar-brand" to="/vendedores">
           {user?.nome ? `Vendedor ${user.nome}` : 'Dashboard Vendedor'}
+          {user?.is_admin && <span className="badge bg-warning text-dark ms-2">Admin</span>} {/* Adiciona um badge se for admin */}
         </NavLink>
         <button 
           className="navbar-toggler" 
@@ -39,9 +40,12 @@ export default function VendedorMenu() {
             <li className="nav-item">
               <NavLink className="nav-link" to="/vendedores/lista-clientes">Clientes</NavLink>
             </li>
-            <li className="nav-item">
-              <NavLink className="nav-link" to="/vendedores/lista-vendedores">Vendedores</NavLink>
-            </li>
+            {/* NOVO: Exibir o link "Vendedores" apenas se o usuário for administrador */}
+            {user?.is_admin && (
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/vendedores/lista-vendedores">Vendedores</NavLink>
+              </li>
+            )}
             <li className="nav-item">
               <NavLink className="nav-link" to="/vendedores/lista-pedidos">Pedidos</NavLink>
             </li>

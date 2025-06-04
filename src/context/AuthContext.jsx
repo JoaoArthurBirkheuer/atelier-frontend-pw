@@ -1,3 +1,5 @@
+// src/context/AuthContext.jsx
+
 import { createContext, useState, useEffect } from 'react';
 
 export const AuthContext = createContext();
@@ -28,12 +30,20 @@ export function AuthProvider({ children }) {
         if (storedUser && storedToken && !isTokenExpired(storedToken)) {
           const parsedUser = JSON.parse(storedUser);
           
-          // Verificação robusta dos dados
-          if (!parsedUser?.id || !parsedUser?.tipo) {
-            throw new Error('Dados de usuário inválidos');
+          // Validação mais flexível para is_admin:
+          // Se parsedUser.is_admin for undefined, assume false.
+          // Isso é importante para compatibilidade com dados antigos no localStorage
+          // ou se o backend, por algum motivo, não enviar a flag.
+          const userWithAdminStatus = {
+            ...parsedUser,
+            is_admin: parsedUser.is_admin === true // Garante que é um booleano
+          };
+
+          if (!userWithAdminStatus?.id || !userWithAdminStatus?.tipo) { 
+            throw new Error('Dados de usuário inválidos ou incompletos no armazenamento local.');
           }
 
-          setUser(parsedUser);
+          setUser(userWithAdminStatus);
           setToken(storedToken);
         } else {
           // Limpeza segura
@@ -43,7 +53,7 @@ export function AuthProvider({ children }) {
       } catch (err) {
         console.error('Erro na inicialização:', err);
         setError(err.message);
-        localStorage.clear();
+        localStorage.clear(); // Limpa tudo se houver erro na inicialização
       } finally {
         setLoading(false);
       }
@@ -54,16 +64,22 @@ export function AuthProvider({ children }) {
 
   const login = async (userData, newToken) => {
     try {
-      // Validação completa
-      if (!userData?.id || !userData?.tipo || !newToken) {
-        throw new Error('Dados de autenticação incompletos');
+      // Validação mais flexível para is_admin:
+      // Se userData.is_admin for undefined ou null, assume false.
+      // Isso impede o erro "Dados de autenticação incompletos"
+      // quando o backend envia is_admin: false ou não envia a propriedade para não-admins.
+      const isAdminStatus = userData.is_admin === true; // Garante que é um booleano
+
+      if (!userData?.id || !userData?.tipo || newToken === undefined) { 
+        throw new Error('Dados de autenticação incompletos recebidos do servidor.');
       }
 
       const userToStore = {
         id: userData.id,
         tipo: userData.tipo,
         nome: userData.nome || '',
-        email: userData.email || ''
+        email: userData.email || '',
+        is_admin: isAdminStatus // Usa o status booleano garantido
       };
 
       localStorage.setItem('user', JSON.stringify(userToStore));
@@ -100,10 +116,57 @@ export function AuthProvider({ children }) {
   const atualizarUsuario = (novosDados) => {
     if (!user) return;
     
-    const updatedUser = { ...user, ...novosDados };
+    // Garante que is_admin seja booleano ao atualizar também
+    const updatedUser = { 
+      ...user, 
+      ...novosDados,
+      is_admin: novosDados.is_admin === true // Garante booleano ao atualizar
+    };
     setUser(updatedUser);
     localStorage.setItem('user', JSON.stringify(updatedUser));
   };
+
+  const register = async (formData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('http://localhost:3002/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.erro || 'Falha no registro');
+      }
+
+      if (data.token && data.id && data.tipo) {
+        const userToStore = {
+          id: data.id,
+          tipo: data.tipo,
+          nome: formData.nome || '', 
+          email: formData.email || '',
+          is_admin: data.is_admin === true // Garante que é um booleano
+        };
+        localStorage.setItem('user', JSON.stringify(userToStore));
+        localStorage.setItem('token', data.token);
+        setUser(userToStore);
+        setToken(data.token);
+      }
+      return data; 
+    } catch (err) {
+      console.error('Erro no registro:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
     <AuthContext.Provider 
@@ -116,6 +179,7 @@ export function AuthProvider({ children }) {
         logout,
         isAuthenticated,
         atualizarUsuario,
+        register,
       }}
     >
       {children}
